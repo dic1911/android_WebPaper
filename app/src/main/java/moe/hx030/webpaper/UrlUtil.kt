@@ -3,7 +3,8 @@ package moe.hx030.webpaper
 import android.util.Patterns
 import java.net.URL
 
-object UrlValidator {
+object UrlUtil {
+    val DEFAULT_URL = "https://example.com"
 
     fun isValidUrl(url: String): Boolean {
         return try {
@@ -22,7 +23,7 @@ object UrlValidator {
         return when {
             trimmed.startsWith("http://") || trimmed.startsWith("https://") -> trimmed
             trimmed.isNotEmpty() -> "https://$trimmed"
-            else -> "https://example.com"
+            else -> DEFAULT_URL
         }
     }
 }

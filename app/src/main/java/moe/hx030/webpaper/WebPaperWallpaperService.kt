@@ -158,7 +158,7 @@ class WebPaperWallpaperService : WallpaperService() {
         }
 
         private fun loadUrl() {
-            val url = preferences?.getString("wallpaper_url", "https://example.com") ?: "https://example.com"
+            val url = preferences?.getString("wallpaper_url", null) ?: UrlUtil.DEFAULT_URL
             val delay = preferences?.getBoolean("delay_resume", false) ?: false
 
             // Set delay resume on the specific WebView instance
@@ -181,7 +181,7 @@ class WebPaperWallpaperService : WallpaperService() {
             Log.v(ENGINE_TAG, "onSharedPreferenceChanged() - Key: $key")
 
             if (key == "wallpaper_url") {
-                val newUrl = sharedPreferences?.getString("wallpaper_url", "https://example.com") ?: "https://example.com"
+                val newUrl = sharedPreferences?.getString("wallpaper_url", null) ?: UrlUtil.DEFAULT_URL
                 Log.v(ENGINE_TAG, "URL preference changed to: $newUrl")
 
                 // Force reload the new URL

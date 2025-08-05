@@ -33,7 +33,7 @@ class MainActivity : AppCompatActivity() {
         setWallpaperButton = findViewById(R.id.setWallpaperButton)
 
         val preferences = PreferenceManager.getDefaultSharedPreferences(this)
-        val savedUrl = preferences.getString("wallpaper_url", "https://example.com") ?: "https://example.com"
+        val savedUrl = preferences.getString("wallpaper_url", null) ?: "https://example.com"
         val savedDelayResume = preferences.getBoolean("delay_resume", false)
 
         urlEditText.setText(savedUrl)
@@ -44,7 +44,7 @@ class MainActivity : AppCompatActivity() {
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
             override fun afterTextChanged(s: Editable?) {
                 val url = s.toString()
-                val isValid = url.isEmpty() || UrlValidator.isValidUrl(UrlValidator.formatUrl(url))
+                val isValid = url.isEmpty() || UrlUtil.isValidUrl(UrlUtil.formatUrl(url))
                 errorText.visibility = if (isValid) View.GONE else View.VISIBLE
                 saveButton.isEnabled = url.isNotEmpty()
             }
@@ -52,7 +52,7 @@ class MainActivity : AppCompatActivity() {
 
         saveButton.setOnClickListener {
             val url = urlEditText.text.toString()
-            val formattedUrl = UrlValidator.formatUrl(url)
+            val formattedUrl = UrlUtil.formatUrl(url)
             preferences.edit {
                 putString("wallpaper_url", formattedUrl)
                 putBoolean("delay_resume", delayResumeSwitch.isChecked)
