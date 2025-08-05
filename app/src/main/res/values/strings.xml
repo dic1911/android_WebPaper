@@ -1,0 +1,12 @@
+<resources>
+    <string name="app_name">WebPaper</string>
+    <string name="wallpaper_service_name">WebPaper Live Wallpaper</string>
+    <string name="wallpaper_description">Display any website as your live wallpaper</string>
+    <string name="msg_url_invalid">Please enter a valid URL</string>
+    <string name="delayed_resume">Delayed resume</string>
+    <string name="save_url">Save URL</string>
+    <string name="set_wallpaper">Set wallpaper</string>
+    <string name="note">Note: Make sure to save the URL before setting as wallpaper</string>
+    <string name="title">WebPaper</string>
+    <string name="subtitle">Configure the URL to display as your live wallpaper</string>
+</resources>
