@@ -8,6 +8,10 @@
     <string name="resume_time_delay">Time-based delay</string>
     <string name="resume_gesture">Tap 3 times quickly to resume</string>
     <string name="delay_ms_hint">Delay in milliseconds</string>
+    <string name="pat_animation_type">Pat animation type</string>
+    <string name="pat_immediate">Immediate pat animation</string>
+    <string name="pat_delayed">Delayed pat animation</string>
+    <string name="pat_delay_ms_hint">Pat animation delay in milliseconds</string>
     <string name="save_url">Save URL</string>
     <string name="set_wallpaper">Set wallpaper</string>
     <string name="note">Note: Make sure to save the URL before setting as wallpaper</string>

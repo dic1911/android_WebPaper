@@ -60,6 +60,28 @@
         android:hint="@string/delay_ms_hint"
         android:inputType="number"
         android:visibility="gone"
+        android:layout_marginBottom="8dp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/pat_animation_type"
+        android:textSize="16sp"
+        android:layout_marginBottom="8dp" />
+
+    <Spinner
+        android:id="@+id/patAnimationSpinner"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp" />
+
+    <EditText
+        android:id="@+id/patDelayEditText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="@string/pat_delay_ms_hint"
+        android:inputType="number"
+        android:visibility="gone"
         android:layout_marginBottom="16dp" />
 
     <Button

@@ -165,19 +165,31 @@ class WebPaperWallpaperService : WallpaperService() {
             
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
-                    // User started touching - trigger start pat animation
-                    Log.v(ENGINE_TAG, "onTouchEvent() - ACTION_DOWN: Starting pat animation")
-                    patRunnable = Runnable {
-                        patRunnable = null
+                    val patType = preferences?.getInt("pat_type", 0) ?: 0
+                    val patDelay = preferences?.getInt("pat_delay_ms", 500) ?: 500
+                    
+                    // Handle gesture for resume if needed
+                    webView?.handleTapForGesture()
+                    
+                    if (patType == 0) {
+                        // Immediate pat animation
+                        Log.v(ENGINE_TAG, "onTouchEvent() - ACTION_DOWN: Starting immediate pat animation")
                         webView?.evaluateJavascript(
                             "if (typeof startPatAnimation === 'function') startPatAnimation();",
                             null
                         )
+                    } else {
+                        // Delayed pat animation
+                        Log.v(ENGINE_TAG, "onTouchEvent() - ACTION_DOWN: Starting delayed pat animation (${patDelay}ms)")
+                        patRunnable = Runnable {
+                            patRunnable = null
+                            webView?.evaluateJavascript(
+                                "if (typeof startPatAnimation === 'function') startPatAnimation();",
+                                null
+                            )
+                        }
+                        webView?.handler?.postDelayed(patRunnable!!, patDelay.toLong())
                     }
-                    webView?.handler?.postDelayed(patRunnable!!, 500)
-                    
-                    // Handle gesture for resume if needed
-                    webView?.handleTapForGesture()
                 }
                 MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
                     // User stopped touching - trigger stop pat animation
@@ -245,6 +257,14 @@ class WebPaperWallpaperService : WallpaperService() {
                     val delay = sharedPreferences?.getBoolean("delay_resume", false) ?: false
                     webView?.delayResume = delay
                     Log.v(ENGINE_TAG, "Delay resume preference changed to: $delay")
+                }
+                "pat_type" -> {
+                    val patType = sharedPreferences?.getInt("pat_type", 0) ?: 0
+                    Log.v(ENGINE_TAG, "Pat animation type preference changed to: $patType")
+                }
+                "pat_delay_ms" -> {
+                    val patDelay = sharedPreferences?.getInt("pat_delay_ms", 500) ?: 500
+                    Log.v(ENGINE_TAG, "Pat animation delay preference changed to: ${patDelay}ms")
                 }
             }
         }
