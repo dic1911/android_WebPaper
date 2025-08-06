@@ -8,8 +8,10 @@ import android.hardware.display.VirtualDisplay
 import android.preference.PreferenceManager
 import android.service.wallpaper.WallpaperService
 import android.util.Log
+import android.view.MotionEvent
 import android.view.SurfaceHolder
 import android.view.ViewGroup
+import kotlinx.coroutines.Runnable
 
 class WebPaperWallpaperService : WallpaperService() {
 
@@ -155,6 +157,40 @@ class WebPaperWallpaperService : WallpaperService() {
             super.onOffsetsChanged(xOffset, yOffset, xOffsetStep, yOffsetStep, xPixelOffset, yPixelOffset)
             Log.v(ENGINE_TAG, "onOffsetsChanged() - xOffset: $xOffset, yOffset: $yOffset, " +
                     "xPixelOffset: $xPixelOffset, yPixelOffset: $yPixelOffset")
+        }
+
+        var patRunnable: Runnable? = null
+        override fun onTouchEvent(event: MotionEvent?) {
+            if (event == null) return
+            
+            when (event.action) {
+                MotionEvent.ACTION_DOWN -> {
+                    // User started touching - trigger start pat animation
+                    Log.v(ENGINE_TAG, "onTouchEvent() - ACTION_DOWN: Starting pat animation")
+                    patRunnable = Runnable {
+                        patRunnable = null
+                        webView?.evaluateJavascript(
+                            "if (typeof startPatAnimation === 'function') startPatAnimation();",
+                            null
+                        )
+                    }
+                    webView?.handler?.postDelayed(patRunnable!!, 500)
+                }
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                    // User stopped touching - trigger stop pat animation
+                    Log.v(ENGINE_TAG, "onTouchEvent() - ACTION_UP/CANCEL: Stopping pat animation")
+
+                    patRunnable?.let { webView?.handler?.removeCallbacks(it) }
+                    if (patRunnable != null) {
+                        patRunnable = null
+                        return
+                    }
+
+                    webView?.evaluateJavascript("if (typeof stopPatAnimation === 'function') stopPatAnimation();", null)
+                }
+            }
+
+            super.onTouchEvent(event)
         }
 
         private fun loadUrl() {

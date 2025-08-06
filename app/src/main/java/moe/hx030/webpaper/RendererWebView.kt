@@ -15,6 +15,7 @@ class RendererWebView(context: Context, private val width: Int, private val heig
         private set
 
     var delayResume = false
+    var running = true
 
     // Store the delayed resume runnable so we can cancel it
     private var delayedResumeRunnable: Runnable? = null
@@ -98,6 +99,7 @@ class RendererWebView(context: Context, private val width: Int, private val heig
     override fun onPause() {
         Log.v(TAG, "onPause() - WebView paused")
         super.onPause()
+        running = false
 
         // Cancel any pending delayed resume
         delayedResumeRunnable?.let {
@@ -111,6 +113,7 @@ class RendererWebView(context: Context, private val width: Int, private val heig
         if (!delayResume) {
             Log.v(TAG, "onResume() - WebView resumed immediately")
             super.onResume()
+            running = true
         } else {
             Log.v(TAG, "onResume() - WebView resuming in 3 seconds (delayed)")
 
@@ -118,6 +121,7 @@ class RendererWebView(context: Context, private val width: Int, private val heig
             delayedResumeRunnable = Runnable {
                 Log.v(TAG, "onResume() - Delayed resume executing now")
                 super.onResume()
+                running = true
                 delayedResumeRunnable = null // Clear reference after execution
             }
 
@@ -128,6 +132,7 @@ class RendererWebView(context: Context, private val width: Int, private val heig
     override fun destroy() {
         Log.v(TAG, "destroy() - WebView being destroyed")
         super.destroy()
+        running = false
     }
 
     override fun onVisibilityChanged(changedView: android.view.View, visibility: Int) {
@@ -150,5 +155,10 @@ class RendererWebView(context: Context, private val width: Int, private val heig
             else -> "UNKNOWN($visibility)"
         }
         Log.v(TAG, "onWindowVisibilityChanged() - Window visibility: $visibilityString")
+    }
+
+    override fun evaluateJavascript(script: String, resultCallback: ValueCallback<String>?) {
+        if (!running) return
+        super.evaluateJavascript(script, resultCallback)
     }
 }
