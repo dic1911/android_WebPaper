@@ -175,6 +175,9 @@ class WebPaperWallpaperService : WallpaperService() {
                         )
                     }
                     webView?.handler?.postDelayed(patRunnable!!, 500)
+                    
+                    // Handle gesture for resume if needed
+                    webView?.handleTapForGesture()
                 }
                 MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
                     // User stopped touching - trigger stop pat animation
@@ -195,11 +198,15 @@ class WebPaperWallpaperService : WallpaperService() {
 
         private fun loadUrl() {
             val url = preferences?.getString("wallpaper_url", null) ?: UrlUtil.DEFAULT_URL
+            val resumeType = preferences?.getInt("resume_type", 0) ?: 0
+            val delayTimeMs = preferences?.getInt("delay_time_ms", 3000) ?: 3000
             val delay = preferences?.getBoolean("delay_resume", false) ?: false
 
-            // Set delay resume on the specific WebView instance
-            webView?.delayResume = delay
-            Log.v(ENGINE_TAG, "loadUrl() - Delay resume set to: $delay")
+            // Set resume settings on the specific WebView instance
+            webView?.resumeType = resumeType
+            webView?.delayTimeMs = delayTimeMs
+            webView?.delayResume = delay // Keep for backward compatibility
+            Log.v(ENGINE_TAG, "loadUrl() - Resume type: $resumeType, Delay time: ${delayTimeMs}ms")
 
             // Only reload if URL has changed
             if (url != currentUrl) {
@@ -216,17 +223,29 @@ class WebPaperWallpaperService : WallpaperService() {
         override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences?, key: String?) {
             Log.v(ENGINE_TAG, "onSharedPreferenceChanged() - Key: $key")
 
-            if (key == "wallpaper_url") {
-                val newUrl = sharedPreferences?.getString("wallpaper_url", null) ?: UrlUtil.DEFAULT_URL
-                Log.v(ENGINE_TAG, "URL preference changed to: $newUrl")
-
-                // Force reload the new URL
-                currentUrl = null // Reset to force reload
-                loadUrl()
-            } else if (key == "delay_resume") {
-                val delay = sharedPreferences?.getBoolean("delay_resume", false) ?: false
-                webView?.delayResume = delay
-                Log.v(ENGINE_TAG, "Delay resume preference changed to: $delay")
+            when (key) {
+                "wallpaper_url" -> {
+                    val newUrl = sharedPreferences?.getString("wallpaper_url", null) ?: UrlUtil.DEFAULT_URL
+                    Log.v(ENGINE_TAG, "URL preference changed to: $newUrl")
+                    // Force reload the new URL
+                    currentUrl = null // Reset to force reload
+                    loadUrl()
+                }
+                "resume_type" -> {
+                    val resumeType = sharedPreferences?.getInt("resume_type", 0) ?: 0
+                    webView?.resumeType = resumeType
+                    Log.v(ENGINE_TAG, "Resume type preference changed to: $resumeType")
+                }
+                "delay_time_ms" -> {
+                    val delayTimeMs = sharedPreferences?.getInt("delay_time_ms", 3000) ?: 3000
+                    webView?.delayTimeMs = delayTimeMs
+                    Log.v(ENGINE_TAG, "Delay time preference changed to: ${delayTimeMs}ms")
+                }
+                "delay_resume" -> {
+                    val delay = sharedPreferences?.getBoolean("delay_resume", false) ?: false
+                    webView?.delayResume = delay
+                    Log.v(ENGINE_TAG, "Delay resume preference changed to: $delay")
+                }
             }
         }
 

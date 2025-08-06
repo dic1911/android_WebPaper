@@ -14,11 +14,18 @@ class RendererWebView(context: Context, private val width: Int, private val heig
     var firstLoadComplete = false
         private set
 
-    var delayResume = false
+    var delayResume = false // Keep for backward compatibility
+    var resumeType = 0 // 0=realtime, 1=time-delay, 2=gesture
+    var delayTimeMs = 3000
     var running = true
 
     // Store the delayed resume runnable so we can cancel it
     private var delayedResumeRunnable: Runnable? = null
+    
+    // Gesture detection for triple tap
+    private var tapCount = 0
+    private var lastTapTime = 0L
+    private var isWaitingForGesture = false
 
     init {
         Log.v(TAG, "Initializing RendererWebView with size: ${width}x${height}")
@@ -110,22 +117,52 @@ class RendererWebView(context: Context, private val width: Int, private val heig
     }
 
     override fun onResume() {
-        if (!delayResume) {
-            Log.v(TAG, "onResume() - WebView resumed immediately")
-            super.onResume()
-            running = true
-        } else {
-            Log.v(TAG, "onResume() - WebView resuming in 3 seconds (delayed)")
-
-            // Create and store the runnable so we can cancel it later
-            delayedResumeRunnable = Runnable {
-                Log.v(TAG, "onResume() - Delayed resume executing now")
+        when (resumeType) {
+            MainActivity.RESUME_TYPE_REALTIME -> { // Realtime
+                Log.v(TAG, "onResume() - WebView resumed immediately (realtime)")
                 super.onResume()
                 running = true
-                delayedResumeRunnable = null // Clear reference after execution
             }
-
-            postDelayed(delayedResumeRunnable!!, 3000)
+            MainActivity.RESUME_TYPE_TIME_DELAY -> { // Time-based delay
+                Log.v(TAG, "onResume() - WebView resuming in ${delayTimeMs}ms (time-delay)")
+                delayedResumeRunnable = Runnable {
+                    Log.v(TAG, "onResume() - Delayed resume executing now")
+                    super.onResume()
+                    running = true
+                    delayedResumeRunnable = null
+                }
+                postDelayed(delayedResumeRunnable!!, delayTimeMs.toLong())
+            }
+            MainActivity.RESUME_TYPE_GESTURE -> { // Gesture (triple tap)
+                Log.v(TAG, "onResume() - WebView waiting for triple tap gesture")
+                isWaitingForGesture = true
+                tapCount = 0
+                // Don't call super.onResume() yet, wait for gesture
+            }
+        }
+    }
+    
+    fun handleTapForGesture() {
+        if (!isWaitingForGesture) return
+        
+        val currentTime = System.currentTimeMillis()
+        
+        if (currentTime - lastTapTime > 300) {
+            // Reset if more than 1 second since last tap
+            tapCount = 1
+        } else {
+            tapCount++
+        }
+        
+        lastTapTime = currentTime
+        Log.v(TAG, "handleTapForGesture() - Tap count: $tapCount")
+        
+        if (tapCount >= 3) {
+            Log.v(TAG, "handleTapForGesture() - Triple tap detected, resuming WebView")
+            isWaitingForGesture = false
+            tapCount = 0
+            running = true
+            super.onResume()
         }
     }
 

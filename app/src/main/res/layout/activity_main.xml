@@ -40,12 +40,27 @@
         android:visibility="gone"
         android:layout_marginBottom="16dp" />
 
-    <androidx.appcompat.widget.SwitchCompat
-        android:id="@+id/delayResumeToggle"
-        android:layout_gravity="center_horizontal"
+    <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/delayed_resume" />
+        android:text="@string/resume_type"
+        android:textSize="16sp"
+        android:layout_marginBottom="8dp" />
+
+    <Spinner
+        android:id="@+id/resumeTypeSpinner"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp" />
+
+    <EditText
+        android:id="@+id/delayTimeEditText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="@string/delay_ms_hint"
+        android:inputType="number"
+        android:visibility="gone"
+        android:layout_marginBottom="16dp" />
 
     <Button
         android:id="@+id/saveButton"
