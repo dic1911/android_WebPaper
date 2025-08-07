@@ -14,7 +14,6 @@ class RendererWebView(context: Context, private val width: Int, private val heig
     var firstLoadComplete = false
         private set
 
-    var delayResume = false // Keep for backward compatibility
     var resumeType = 0 // 0=realtime, 1=time-delay, 2=gesture
     var delayTimeMs = 3000
     var running = true

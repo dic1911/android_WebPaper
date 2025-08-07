@@ -119,8 +119,6 @@ class MainActivity : AppCompatActivity() {
                 putInt("delay_time_ms", delayTime)
                 putInt("pat_type", patType)
                 putInt("pat_delay_ms", patDelay)
-                // Keep old preference for backward compatibility
-                putBoolean("delay_resume", resumeType != RESUME_TYPE_REALTIME)
             }
             urlEditText.setText(formattedUrl)
         }

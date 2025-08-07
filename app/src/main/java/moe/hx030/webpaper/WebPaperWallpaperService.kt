@@ -212,12 +212,10 @@ class WebPaperWallpaperService : WallpaperService() {
             val url = preferences?.getString("wallpaper_url", null) ?: UrlUtil.DEFAULT_URL
             val resumeType = preferences?.getInt("resume_type", 0) ?: 0
             val delayTimeMs = preferences?.getInt("delay_time_ms", 3000) ?: 3000
-            val delay = preferences?.getBoolean("delay_resume", false) ?: false
 
             // Set resume settings on the specific WebView instance
             webView?.resumeType = resumeType
             webView?.delayTimeMs = delayTimeMs
-            webView?.delayResume = delay // Keep for backward compatibility
             Log.v(ENGINE_TAG, "loadUrl() - Resume type: $resumeType, Delay time: ${delayTimeMs}ms")
 
             // Only reload if URL has changed
@@ -252,11 +250,6 @@ class WebPaperWallpaperService : WallpaperService() {
                     val delayTimeMs = sharedPreferences?.getInt("delay_time_ms", 3000) ?: 3000
                     webView?.delayTimeMs = delayTimeMs
                     Log.v(ENGINE_TAG, "Delay time preference changed to: ${delayTimeMs}ms")
-                }
-                "delay_resume" -> {
-                    val delay = sharedPreferences?.getBoolean("delay_resume", false) ?: false
-                    webView?.delayResume = delay
-                    Log.v(ENGINE_TAG, "Delay resume preference changed to: $delay")
                 }
                 "pat_type" -> {
                     val patType = sharedPreferences?.getInt("pat_type", 0) ?: 0
