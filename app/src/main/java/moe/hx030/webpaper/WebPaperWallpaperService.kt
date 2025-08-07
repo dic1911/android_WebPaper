@@ -183,6 +183,7 @@ class WebPaperWallpaperService : WallpaperService() {
                         Log.v(ENGINE_TAG, "onTouchEvent() - ACTION_DOWN: Starting delayed pat animation (${patDelay}ms)")
                         patRunnable = Runnable {
                             patRunnable = null
+                            webView?.forceResume()
                             webView?.evaluateJavascript(
                                 "if (typeof startPatAnimation === 'function') startPatAnimation();",
                                 null

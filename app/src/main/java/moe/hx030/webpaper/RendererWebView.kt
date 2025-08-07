@@ -115,6 +115,13 @@ class RendererWebView(context: Context, private val width: Int, private val heig
         delayedResumeRunnable = null
     }
 
+    fun forceResume() {
+        super.onResume()
+        isWaitingForGesture = false
+        running = true
+        tapCount = 0
+    }
+
     override fun onResume() {
         when (resumeType) {
             MainActivity.RESUME_TYPE_REALTIME -> { // Realtime
