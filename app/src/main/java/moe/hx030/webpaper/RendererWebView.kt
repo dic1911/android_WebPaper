@@ -21,10 +21,9 @@ class RendererWebView(context: Context, private val width: Int, private val heig
     // Store the delayed resume runnable so we can cancel it
     private var delayedResumeRunnable: Runnable? = null
     
-    // Gesture detection for triple tap
-    private var tapCount = 0
-    private var lastTapTime = 0L
+    // Gesture detection for resume
     private var isWaitingForGesture = false
+    private var gestureResumeType = 0 // Store which gesture should trigger resume
 
     init {
         Log.v(TAG, "Initializing RendererWebView with size: ${width}x${height}")
@@ -119,7 +118,6 @@ class RendererWebView(context: Context, private val width: Int, private val heig
         super.onResume()
         isWaitingForGesture = false
         running = true
-        tapCount = 0
     }
 
     override fun onResume() {
@@ -139,37 +137,29 @@ class RendererWebView(context: Context, private val width: Int, private val heig
                 }
                 postDelayed(delayedResumeRunnable!!, delayTimeMs.toLong())
             }
-            MainActivity.RESUME_TYPE_GESTURE -> { // Gesture (triple tap)
-                Log.v(TAG, "onResume() - WebView waiting for triple tap gesture")
+            MainActivity.RESUME_TYPE_GESTURE -> { // Gesture-based resume
+                Log.v(TAG, "onResume() - WebView waiting for gesture to resume")
                 isWaitingForGesture = true
-                tapCount = 0
                 // Don't call super.onResume() yet, wait for gesture
             }
         }
     }
     
     fun handleTapForGesture() {
+        // This method is called when a gesture is detected for potential resume
+        // The actual gesture checking is now done in WebPaperWallpaperService
+        // This method just marks that a gesture occurred for potential resume triggering
+    }
+    
+    fun handleGestureResume(gestureType: Int, currentGestureType: Int) {
         if (!isWaitingForGesture) return
         
-        val currentTime = System.currentTimeMillis()
-        
-        if (currentTime - lastTapTime > 300) {
-            // Reset if more than 1 second since last tap
-            tapCount = 1
-        } else {
-            tapCount++
-        }
-        
-        lastTapTime = currentTime
-        Log.v(TAG, "handleTapForGesture() - Tap count: $tapCount")
-        
-        if (tapCount >= 3) {
-            Log.v(TAG, "handleTapForGesture() - Triple tap detected, resuming WebView")
-            isWaitingForGesture = false
-            tapCount = 0
-            running = true
-            super.onResume()
-        }
+        // For the enhanced gesture system, any configured gesture can trigger resume
+        // The gestureType parameter indicates which gesture was performed
+        Log.v(TAG, "handleGestureResume() - Gesture detected (type: $gestureType), resuming WebView")
+        isWaitingForGesture = false
+        running = true
+        super.onResume()
     }
 
     override fun destroy() {

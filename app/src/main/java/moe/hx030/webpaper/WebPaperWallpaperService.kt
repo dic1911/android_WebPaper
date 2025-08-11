@@ -11,7 +11,10 @@ import android.util.Log
 import android.view.MotionEvent
 import android.view.SurfaceHolder
 import android.view.ViewGroup
+import androidx.core.view.GestureDetectorCompat
 import kotlinx.coroutines.Runnable
+import kotlin.math.abs
+import org.json.JSONArray
 
 class WebPaperWallpaperService : WallpaperService() {
 
@@ -54,6 +57,9 @@ class WebPaperWallpaperService : WallpaperService() {
             preferences = PreferenceManager.getDefaultSharedPreferences(this@WebPaperWallpaperService)
             preferences?.registerOnSharedPreferenceChangeListener(this)
             Log.v(ENGINE_TAG, "Registered SharedPreferences listener")
+            
+            // Load gesture configurations
+            loadGestureConfigs()
         }
 
         override fun onSurfaceCreated(holder: SurfaceHolder?) {
@@ -149,64 +155,138 @@ class WebPaperWallpaperService : WallpaperService() {
             }
         }
 
-        override fun onOffsetsChanged(
-            xOffset: Float, yOffset: Float,
-            xOffsetStep: Float, yOffsetStep: Float,
-            xPixelOffset: Int, yPixelOffset: Int
-        ) {
-            super.onOffsetsChanged(xOffset, yOffset, xOffsetStep, yOffsetStep, xPixelOffset, yPixelOffset)
-            Log.v(ENGINE_TAG, "onOffsetsChanged() - xOffset: $xOffset, yOffset: $yOffset, " +
-                    "xPixelOffset: $xPixelOffset, yPixelOffset: $yPixelOffset")
-        }
+//        override fun onOffsetsChanged(
+//            xOffset: Float, yOffset: Float,
+//            xOffsetStep: Float, yOffsetStep: Float,
+//            xPixelOffset: Int, yPixelOffset: Int
+//        ) {
+//            super.onOffsetsChanged(xOffset, yOffset, xOffsetStep, yOffsetStep, xPixelOffset, yPixelOffset)
+//            Log.v(ENGINE_TAG, "onOffsetsChanged() - xOffset: $xOffset, yOffset: $yOffset, " +
+//                    "xPixelOffset: $xPixelOffset, yPixelOffset: $yPixelOffset")
+//        }
 
-        var patRunnable: Runnable? = null
+        var gestureRunnable: Runnable? = null
+        private var initialX = 0f
+        private var initialY = 0f
+        private var gestureConfigs = mutableListOf<GestureConfig>()
+        private var longClickTriggered = false
+
         override fun onTouchEvent(event: MotionEvent?) {
             if (event == null) return
             
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
-                    val patType = preferences?.getInt("pat_type", 0) ?: 0
-                    val patDelay = preferences?.getInt("pat_delay_ms", 500) ?: 500
+                    initialX = event.x
+                    initialY = event.y
                     
-                    // Handle gesture for resume if needed
-                    webView?.handleTapForGesture()
+                    // Handle gesture for resume and find configured long click gesture
+                    val resumeType = preferences?.getInt("resume_type", 0) ?: 0
+                    val longClickConfig = gestureConfigs.find { it.type == GestureConfigUtils.GESTURE_TYPE_LONG_CLICK }
                     
-                    if (patType == 0) {
-                        // Immediate pat animation
-                        Log.v(ENGINE_TAG, "onTouchEvent() - ACTION_DOWN: Starting immediate pat animation")
-                        webView?.evaluateJavascript(
-                            "if (typeof startPatAnimation === 'function') startPatAnimation();",
-                            null
-                        )
-                    } else {
-                        // Delayed pat animation
-                        Log.v(ENGINE_TAG, "onTouchEvent() - ACTION_DOWN: Starting delayed pat animation (${patDelay}ms)")
-                        patRunnable = Runnable {
-                            patRunnable = null
-                            webView?.forceResume()
-                            webView?.evaluateJavascript(
-                                "if (typeof startPatAnimation === 'function') startPatAnimation();",
-                                null
-                            )
+                    longClickConfig?.let { config ->
+                        Log.v(ENGINE_TAG, "onTouchEvent() - ACTION_DOWN: Starting long click gesture (${config.delay}ms)")
+                        gestureRunnable = Runnable {
+                            gestureRunnable = null
+                            longClickTriggered = true
+                            Log.d(ENGINE_TAG, "longClickTriggered")
+                            if (resumeType == 2) { // Check for resume
+                                webView?.handleGestureResume(GestureConfigUtils.GESTURE_TYPE_LONG_CLICK, GestureConfigUtils.GESTURE_TYPE_LONG_CLICK)
+                            }
+                            executeGestureConfig(config)
                         }
-                        webView?.handler?.postDelayed(patRunnable!!, patDelay.toLong())
+                        webView?.handler?.postDelayed(gestureRunnable!!, config.delay.toLong())
+                    }
+                    
+                    // Handle immediate gestures (tap area)
+                    val tapAreaConfig = gestureConfigs.find { it.type == GestureConfigUtils.GESTURE_TYPE_TAP_AREA }
+                    tapAreaConfig?.let { config ->
+                        Log.v(ENGINE_TAG, "onTouchEvent() - ACTION_DOWN: Tap area gesture")
+                        if (resumeType == 2) { // Check for resume
+                            webView?.handleGestureResume(GestureConfigUtils.GESTURE_TYPE_TAP_AREA, GestureConfigUtils.GESTURE_TYPE_TAP_AREA)
+                        }
+                        executeGestureConfig(config, event.x, event.y)
                     }
                 }
-                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
-                    // User stopped touching - trigger stop pat animation
-                    Log.v(ENGINE_TAG, "onTouchEvent() - ACTION_UP/CANCEL: Stopping pat animation")
-
-                    patRunnable?.let { webView?.handler?.removeCallbacks(it) }
-                    if (patRunnable != null) {
-                        patRunnable = null
-                        return
+                MotionEvent.ACTION_UP -> {
+                    val deltaX = event.x - initialX
+                    val deltaY = event.y - initialY
+                    val minSwipeDistance = 100f
+                    val resumeType = preferences?.getInt("resume_type", 0) ?: 0
+                    
+                    // Cancel long click if still pending
+                    gestureRunnable?.let { 
+                        webView?.handler?.removeCallbacks(it)
+                        gestureRunnable = null
                     }
 
-                    webView?.evaluateJavascript("if (typeof stopPatAnimation === 'function') stopPatAnimation();", null)
+                    if (longClickTriggered) {
+                        longClickTriggered = false
+                        val longClickEnd = gestureConfigs.find { end -> end.type == GestureConfigUtils.GESTURE_TYPE_LONG_CLICK_END }
+                        longClickEnd?.let { end ->
+                            webView?.evaluateJavascript(end.jsCode, null)
+                        }
+                        return
+                    }
+                    
+                    // Check for swipe gestures
+                    if (abs(deltaX) > minSwipeDistance && abs(deltaX) > abs(deltaY)) {
+                        if (deltaX > 0) { // Swipe right
+                            val swipeRightConfig = gestureConfigs.find { it.type == GestureConfigUtils.GESTURE_TYPE_SWIPE_RIGHT }
+                            swipeRightConfig?.let { config ->
+                                Log.v(ENGINE_TAG, "onTouchEvent() - Swipe right gesture detected")
+                                if (resumeType == 2) {
+                                    webView?.handleGestureResume(GestureConfigUtils.GESTURE_TYPE_SWIPE_RIGHT, GestureConfigUtils.GESTURE_TYPE_SWIPE_RIGHT)
+                                }
+                                executeGestureConfig(config)
+                            }
+                        } else { // Swipe left
+                            val swipeLeftConfig = gestureConfigs.find { it.type == GestureConfigUtils.GESTURE_TYPE_SWIPE_LEFT }
+                            swipeLeftConfig?.let { config ->
+                                Log.v(ENGINE_TAG, "onTouchEvent() - Swipe left gesture detected")
+                                if (resumeType == 2) {
+                                    webView?.handleGestureResume(GestureConfigUtils.GESTURE_TYPE_SWIPE_LEFT, GestureConfigUtils.GESTURE_TYPE_SWIPE_LEFT)
+                                }
+                                executeGestureConfig(config)
+                            }
+                        }
+                    }
+                }
+                MotionEvent.ACTION_CANCEL -> {
+                    gestureRunnable?.let { 
+                        webView?.handler?.removeCallbacks(it)
+                        gestureRunnable = null
+                    }
+
+                    if (longClickTriggered) {
+                        longClickTriggered = false
+                        val longClickEnd = gestureConfigs.find { end -> end.type == GestureConfigUtils.GESTURE_TYPE_LONG_CLICK_END }
+                        longClickEnd?.let { end ->
+                            executeGestureConfig(end)
+                        }
+                        return
+                    }
                 }
             }
 
             super.onTouchEvent(event)
+        }
+
+        private fun executeGestureConfig(config: GestureConfig, x: Float = 0f, y: Float = 0f) {
+            val jsCode = when (config.type) {
+                GestureConfigUtils.GESTURE_TYPE_TAP_AREA -> { // Tap on area - inject coordinates
+                    config.jsCode.replace("{{x}}", x.toString()).replace("{{y}}", y.toString())
+                }
+                else -> config.jsCode
+            }
+            
+            Log.v(ENGINE_TAG, "executeGestureConfig() - Executing: $jsCode")
+            webView?.evaluateJavascript(jsCode, null)
+        }
+        
+        private fun loadGestureConfigs() {
+            gestureConfigs.clear()
+            val gesturesJson = preferences?.getString("gesture_configs", "") ?: ""
+            gestureConfigs.addAll(GestureConfigUtils.loadGestureConfigs(gesturesJson))
         }
 
         private fun loadUrl() {
@@ -252,13 +332,9 @@ class WebPaperWallpaperService : WallpaperService() {
                     webView?.delayTimeMs = delayTimeMs
                     Log.v(ENGINE_TAG, "Delay time preference changed to: ${delayTimeMs}ms")
                 }
-                "pat_type" -> {
-                    val patType = sharedPreferences?.getInt("pat_type", 0) ?: 0
-                    Log.v(ENGINE_TAG, "Pat animation type preference changed to: $patType")
-                }
-                "pat_delay_ms" -> {
-                    val patDelay = sharedPreferences?.getInt("pat_delay_ms", 500) ?: 500
-                    Log.v(ENGINE_TAG, "Pat animation delay preference changed to: ${patDelay}ms")
+                "gesture_configs" -> {
+                    Log.v(ENGINE_TAG, "Gesture configurations changed, reloading...")
+                    loadGestureConfigs()
                 }
             }
         }

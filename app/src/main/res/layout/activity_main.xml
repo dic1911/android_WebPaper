@@ -70,24 +70,87 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/pat_animation_type"
+            android:text="@string/gesture_configuration"
             android:textSize="16sp"
+            android:textStyle="bold"
             android:layout_marginBottom="8dp" />
 
-        <Spinner
-            android:id="@+id/patAnimationSpinner"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="8dp" />
+            android:orientation="horizontal"
+            android:layout_marginBottom="8dp">
 
-        <EditText
-            android:id="@+id/patDelayEditText"
+            <Spinner
+                android:id="@+id/gestureTypeSpinner"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginEnd="8dp" />
+
+            <Button
+                android:id="@+id/addGestureButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/add_gesture"
+                android:textSize="12sp"
+                android:minHeight="40dp" />
+
+        </LinearLayout>
+
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="@string/pat_delay_ms_hint"
-            android:inputType="number"
-            android:visibility="gone"
-            android:layout_marginBottom="16dp" />
+            android:orientation="horizontal"
+            android:layout_marginBottom="8dp">
+
+            <EditText
+                android:id="@+id/gestureDelayEditText"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:hint="@string/gesture_delay_ms_hint"
+                android:inputType="number"
+                android:layout_marginEnd="8dp"
+                android:visibility="gone" />
+
+            <EditText
+                android:id="@+id/customJsEditText"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="2"
+                android:hint="@string/custom_js_hint"
+                android:inputType="textNoSuggestions"
+                android:maxLines="1" />
+
+        </LinearLayout>
+
+        <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="120dp"
+            android:layout_marginBottom="16dp"
+            android:background="#494949"
+            android:padding="8dp">
+
+            <LinearLayout
+                android:id="@+id/gestureListContainer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/noGesturesText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/no_gestures_configured"
+                    android:textColor="#666666"
+                    android:textStyle="italic"
+                    android:gravity="center"
+                    android:padding="16dp" />
+
+            </LinearLayout>
+
+        </ScrollView>
 
         <Button
             android:id="@+id/saveButton"
